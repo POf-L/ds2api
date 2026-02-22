@@ -209,9 +209,9 @@ function consumeToolCapture(state, toolNames) {
   if (parsed.length === 0) {
     return {
       ready: true,
-      prefix: captured,
+      prefix: captured.slice(0, obj.end),
       calls: [],
-      suffix: '',
+      suffix: suffixPart,
     };
   }
   if (state.toolNameSent) {
