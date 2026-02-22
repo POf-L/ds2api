@@ -207,14 +207,6 @@ function consumeToolCapture(state, toolNames) {
   }
   const parsed = parseStandaloneToolCalls(captured.slice(start, obj.end), toolNames);
   if (parsed.length === 0) {
-    if (state.toolNameSent) {
-      return {
-        ready: true,
-        prefix: prefixPart,
-        calls: [],
-        suffix: suffixPart,
-      };
-    }
     return {
       ready: true,
       prefix: captured,
