@@ -1,0 +1,62 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Add Upstream & Force Sync
+        run: |
+          set -euo pipefail
+          
+          git remote add upstream https://github.com/CJackHwang/ds2api.git || true
+          git fetch upstream --tags --force
+          
+          echo "=== Before sync status ==="
+          git log --oneline -5
+          
+          # 备份自定义 workflows
+          mkdir -p /tmp/workflow_backup
+          cp -r .github/workflows/* /tmp/workflow_backup/ 2>/dev/null || true
+          
+          echo "🔄 Resetting hard to upstream/main..."
+          git checkout main
+          git reset --hard upstream/main
+          
+          # 恢复自定义 workflows
+          echo "🔄 Restoring custom .github/workflows..."
+          mkdir -p .github/workflows
+          cp -r /tmp/workflow_backup/* .github/workflows/ 2>/dev/null || true
+          
+          git add .github/workflows
+          
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(sync): restore custom .github/workflows after upstream reset"
+            echo "✅ Restored custom workflows and committed."
+          else
+            echo "✅ No workflow changes needed."
+          fi
+          
+          echo "🚀 Pushing to origin with safe force..."
+          git push origin main --force-with-lease
+          
+          echo "🎉 Successfully force-synced with upstream! Now should be 0 behind."
